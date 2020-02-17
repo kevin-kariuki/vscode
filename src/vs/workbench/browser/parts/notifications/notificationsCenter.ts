@@ -103,6 +103,9 @@ export class NotificationsCenter extends Themable {
 		// Context Key
 		this.notificationsCenterVisibleContextKey.set(true);
 
+		// Visibility
+		this.model.notifications.forEach(notification => notification.updateVisibility(true));
+
 		// Event
 		this._onDidChangeVisibility.fire();
 	}
@@ -179,6 +182,7 @@ export class NotificationsCenter extends Themable {
 		switch (e.kind) {
 			case NotificationChangeType.ADD:
 				notificationsList.updateNotificationsList(e.index, 0, [e.item]);
+				e.item.updateVisibility(true);
 				break;
 			case NotificationChangeType.CHANGE:
 				notificationsList.updateNotificationsList(e.index, 1, [e.item]);
@@ -186,6 +190,7 @@ export class NotificationsCenter extends Themable {
 			case NotificationChangeType.REMOVE:
 				focusGroup = isAncestor(document.activeElement, notificationsCenterContainer);
 				notificationsList.updateNotificationsList(e.index, 1);
+				e.item.updateVisibility(false);
 				break;
 		}
 
@@ -217,6 +222,9 @@ export class NotificationsCenter extends Themable {
 
 		// Context Key
 		this.notificationsCenterVisibleContextKey.set(false);
+
+		// Visibility
+		this.model.notifications.forEach(notification => notification.updateVisibility(false));
 
 		// Event
 		this._onDidChangeVisibility.fire();

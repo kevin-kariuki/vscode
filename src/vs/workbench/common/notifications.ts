@@ -88,19 +88,27 @@ export interface IStatusMessageChangeEvent {
 	kind: StatusMessageChangeType;
 }
 
-export class NotificationHandle implements INotificationHandle {
+export class NotificationHandle extends Disposable implements INotificationHandle {
 
-	private readonly _onDidClose = new Emitter<void>();
-	readonly onDidClose: Event<void> = this._onDidClose.event;
+	private readonly _onDidClose = this._register(new Emitter<void>());
+	readonly onDidClose = this._onDidClose.event;
 
-	constructor(private readonly item: INotificationViewItem, private readonly closeItem: (item: INotificationViewItem) => void) {
+	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	readonly onDidChangeVisibility = this._onDidChangeVisibility.event;
+
+	constructor(private readonly item: INotificationViewItem, private readonly onClose: (item: INotificationViewItem) => void) {
+		super();
+
 		this.registerListeners();
 	}
 
 	private registerListeners(): void {
+		this._register(this.item.onDidVisibilityChange(visibility => this._onDidChangeVisibility.fire(visibility)));
+
 		Event.once(this.item.onDidClose)(() => {
 			this._onDidClose.fire();
-			this._onDidClose.dispose();
+
+			this.dispose();
 		});
 	}
 
@@ -121,8 +129,9 @@ export class NotificationHandle implements INotificationHandle {
 	}
 
 	close(): void {
-		this.closeItem(this.item);
-		this._onDidClose.dispose();
+		this.onClose(this.item);
+
+		this.dispose();
 	}
 }
 
@@ -258,9 +267,12 @@ export interface INotificationViewItem {
 
 	readonly expanded: boolean;
 	readonly canCollapse: boolean;
+	readonly visible: boolean;
+	readonly closed: boolean;
 
 	readonly onDidExpansionChange: Event<void>;
 	readonly onDidClose: Event<void>;
+	readonly onDidVisibilityChange: Event<boolean>;
 	readonly onDidLabelChange: Event<INotificationViewItemLabelChangeEvent>;
 
 	expand(): void;
@@ -273,6 +285,7 @@ export interface INotificationViewItem {
 	updateSeverity(severity: Severity): void;
 	updateMessage(message: NotificationMessage): void;
 	updateActions(actions?: INotificationActions): void;
+	updateVisibility(visible: boolean): void;
 
 	close(): void;
 
@@ -402,12 +415,17 @@ export class NotificationViewItem extends Disposable implements INotificationVie
 	private static readonly LINK_REGEX = /\[([^\]]+)\]\(((?:https?:\/\/|command:)[^\)\s]+)(?: "([^"]+)")?\)/gi;
 
 	private _expanded: boolean | undefined;
+	private _visible: boolean | undefined;
+	private _closed: boolean | undefined;
 
 	private _actions: INotificationActions | undefined;
 	private _progress: NotificationViewItemProgress | undefined;
 
 	private readonly _onDidExpansionChange = this._register(new Emitter<void>());
 	readonly onDidExpansionChange = this._onDidExpansionChange.event;
+
+	private readonly _onDidVisibilityChange = this._register(new Emitter<boolean>());
+	readonly onDidVisibilityChange = this._onDidVisibilityChange.event;
 
 	private readonly _onDidClose = this._register(new Emitter<void>());
 	readonly onDidClose = this._onDidClose.event;
@@ -522,6 +540,14 @@ export class NotificationViewItem extends Disposable implements INotificationVie
 		return this._severity;
 	}
 
+	get visible(): boolean {
+		return !!this._visible;
+	}
+
+	get closed(): boolean {
+		return !!this._closed;
+	}
+
 	get sticky(): boolean {
 		if (this._sticky) {
 			return true; // explicitly sticky
@@ -601,6 +627,13 @@ export class NotificationViewItem extends Disposable implements INotificationVie
 		this._onDidLabelChange.fire({ kind: NotificationViewItemLabelKind.ACTIONS });
 	}
 
+	updateVisibility(visible: boolean): void {
+		if (this._visible !== visible) {
+			this._visible = visible;
+			this._onDidVisibilityChange.fire(this._visible);
+		}
+	}
+
 	expand(): void {
 		if (this._expanded || !this.canCollapse) {
 			return;
@@ -631,6 +664,7 @@ export class NotificationViewItem extends Disposable implements INotificationVie
 	}
 
 	close(): void {
+		this._closed = true;
 		this._onDidClose.fire();
 
 		this.dispose();

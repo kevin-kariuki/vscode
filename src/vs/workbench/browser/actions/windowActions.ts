@@ -31,6 +31,8 @@ import { isMacintosh } from 'vs/base/common/platform';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { inQuickOpenContext, getQuickNavigateHandler } from 'vs/workbench/browser/parts/quickopen/quickopen';
 import { IHostService } from 'vs/workbench/services/host/browser/host';
+import { IProgressService, ProgressLocation } from 'vs/platform/progress/common/progress';
+import { timeout } from 'vs/base/common/async';
 
 export const inRecentFilesPickerContextKey = 'inRecentFilesPicker';
 
@@ -195,16 +197,37 @@ class ToggleFullScreenAction extends Action {
 	static readonly ID = 'workbench.action.toggleFullScreen';
 	static readonly LABEL = nls.localize('toggleFullScreen', "Toggle Full Screen");
 
+	static counter = 0;
+
+	private counter = 0;
+
 	constructor(
 		id: string,
 		label: string,
-		@IHostService private readonly hostService: IHostService
+		@IProgressService private readonly progressService: IProgressService
 	) {
 		super(id, label);
+
+		ToggleFullScreenAction.counter++;
 	}
 
 	run(): Promise<void> {
-		return this.hostService.toggleFullScreen();
+		this.progressService.withProgress({
+			location: ProgressLocation.Notification,
+			title: `[${ToggleFullScreenAction.counter}] Some long running operation`,
+			cancellable: true
+		}, progress => {
+			setInterval(() => {
+				progress.report({
+					message: 'Progress update: ' + this.counter++
+				});
+			}, 1000);
+
+			return timeout(20000);
+		});
+
+		return Promise.resolve();
+		// return this.hostService.toggleFullScreen();
 	}
 }
 

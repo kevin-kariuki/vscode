@@ -229,6 +229,9 @@ export class NotificationsToasts extends Themable {
 			removeClass(notificationToast, 'notification-fade-in');
 			addClass(notificationToast, 'notification-fade-in-done');
 		}));
+
+		// Mark as visible
+		item.updateVisibility(true);
 	}
 
 	private purgeNotification(item: INotificationViewItem, notificationToastContainer: HTMLElement, notificationList: NotificationsList, disposables: DisposableStore): void {
@@ -293,6 +296,9 @@ export class NotificationsToasts extends Themable {
 
 			// Remove from Map
 			this.mapNotificationToToast.delete(item);
+
+			// Update visibility
+			notificationToast.item.updateVisibility(!notificationToast.item.closed || !!this.isNotificationsCenterVisible);
 		}
 
 		// Layout if we still have toasts
@@ -312,7 +318,16 @@ export class NotificationsToasts extends Themable {
 	}
 
 	private removeToasts(): void {
-		this.mapNotificationToToast.forEach(toast => dispose(toast.toDispose));
+		this.mapNotificationToToast.forEach(toast => {
+
+			// Update visibility
+			if (!this.isNotificationsCenterVisible) {
+				toast.item.updateVisibility(false);
+			}
+
+			// dispose
+			dispose(toast.toDispose);
+		});
 		this.mapNotificationToToast.clear();
 
 		this.doHide();

@@ -6,7 +6,7 @@
 import BaseSeverity from 'vs/base/common/severity';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IAction } from 'vs/base/common/actions';
-import { Event, Emitter } from 'vs/base/common/event';
+import { Event } from 'vs/base/common/event';
 import { IDisposable } from 'vs/base/common/lifecycle';
 
 export import Severity = BaseSeverity;
@@ -148,6 +148,11 @@ export interface INotificationHandle {
 	 * Will be fired once the notification is closed.
 	 */
 	readonly onDidClose: Event<void>;
+
+	/**
+	 * Will be fired whenever the notification shows or hides.
+	 */
+	readonly onDidChangeVisibility: Event<boolean>;
 
 	/**
 	 * Allows to indicate progress on the notification even after the
