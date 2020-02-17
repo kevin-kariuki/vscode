@@ -164,11 +164,7 @@ export class ProgressService extends Disposable implements IProgressService {
 			constructor() {
 				super();
 
-				this.promise = callback({
-					report: progress => {
-						progressStateModel.report(progress);
-					}
-				});
+				this.promise = callback(this);
 
 				this.promise.finally(() => {
 					this.dispose();
@@ -313,7 +309,6 @@ export class ProgressService extends Disposable implements IProgressService {
 
 		let notificationHandle: INotificationHandle | undefined;
 		let notificationTimeout: any | undefined;
-
 		let titleAndMessage: string | undefined; // hoisted to make sure a delayed notification shows the most recent message
 
 		const updateNotification = (step?: IProgressStep): void => {

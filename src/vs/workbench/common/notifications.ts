@@ -424,9 +424,6 @@ export class NotificationViewItem extends Disposable implements INotificationVie
 	private readonly _onDidExpansionChange = this._register(new Emitter<void>());
 	readonly onDidExpansionChange = this._onDidExpansionChange.event;
 
-	private readonly _onDidVisibilityChange = this._register(new Emitter<boolean>());
-	readonly onDidVisibilityChange = this._onDidVisibilityChange.event;
-
 	private readonly _onDidClose = this._register(new Emitter<void>());
 	readonly onDidClose = this._onDidClose.event;
 
